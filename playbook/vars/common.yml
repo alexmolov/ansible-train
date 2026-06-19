@@ -1,0 +1,2 @@
+clickhouse_database: "logs"
+clickhouse_table: "vector_messages"

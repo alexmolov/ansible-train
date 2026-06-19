@@ -2,4 +2,13 @@
 clickhouse:
   hosts:
     clickhouse-01:
-      ansible_host: <IP_here>
+      ansible_host: 51.250.78.9
+      ansible_user: centos
+      ansible_python_interpreter: /usr/bin/python3
+
+vector:
+  hosts:
+    vector-01:
+      ansible_host: 111.88.246.91
+      ansible_user: centos
+      ansible_python_interpreter: /usr/bin/python3
