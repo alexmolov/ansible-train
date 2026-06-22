@@ -89,6 +89,8 @@
         state: present
         disable_gpg_check: true
       notify: Restart vector service
+    - name: Flush handlers
+      ansible.builtin.meta: flush_handlers
     - name: Deploy Vector configuration
       become: true
       ansible.builtin.template:
@@ -96,5 +98,52 @@
         dest: "{{ vector_config_file }}"
         mode: '0644'
       notify: Restart vector service
+    - name: Flush handlers
+      ansible.builtin.meta: flush_handlers
+
+
+- name: Install and configure LightHouse
+  hosts: lighthouse
+  tags:
+    - lighthouse
+  handlers:
+    - name: Restart nginx
+      become: true
+      ansible.builtin.systemd:
+        name: nginx
+        state: restarted
+      when: true
+  tasks:
+    - name: Install git and nginx
+      become: true
+      ansible.builtin.dnf:
+        name:
+          - nginx
+          - git
+        state: present
+
+    - name: Create lighthouse directory
+      become: true
+      ansible.builtin.file:
+        path: "{{ lighthouse_install_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: Clone lighthouse repository
+      become: true
+      ansible.builtin.git:
+        repo: "{{ lighthouse_repo }}"
+        dest: "{{ lighthouse_install_dir }}"
+        version: master
+        force: true
+
+    - name: Deploy lighthouse nginx site config
+      become: true
+      ansible.builtin.template:
+        src: "{{ playbook_dir }}/templates/lighthouse.conf.j2"
+        dest: /etc/nginx/conf.d/lighthouse.conf
+        mode: '0644'
+      notify: Restart nginx
+
     - name: Flush handlers
       ansible.builtin.meta: flush_handlers

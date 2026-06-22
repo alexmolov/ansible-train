@@ -12,3 +12,10 @@ vector:
       ansible_host: 111.88.246.91
       ansible_user: centos
       ansible_python_interpreter: /usr/bin/python3
+
+lighthouse:
+  hosts:
+    lighthouse-01:
+      ansible_host: 51.252.78.9
+      ansible_user: centos
+      ansible_python_interpreter: /usr/bin/python3
