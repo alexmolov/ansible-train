@@ -4,45 +4,17 @@
     - clickhouse
   vars_files:
     - ../vars/common.yml
-  handlers:
-    - name: Start clickhouse service
-      become: true
-      ansible.builtin.service:
-        name: clickhouse-server
-        state: restarted
-      when: true
+  roles:
+    - clickhouse
+  vars:
+    clickhouse_disable_gpg_check: true
   tasks:
-    - name: Download ClickHouse packages to home directory
-      ansible.builtin.get_url:
-        url: "https://packages.clickhouse.com/rpm/stable/{{ item }}-{{ clickhouse_version }}.x86_64.rpm"
-        dest: "./{{ item }}-{{ clickhouse_version }}.x86_64.rpm"
-        mode: '0644'
-      loop: "{{ clickhouse_packages }}"
-    - name: Install clickhouse packages
-      become: true
-      ansible.builtin.dnf:
-        name: "./{{ item }}-{{ clickhouse_version }}.x86_64.rpm"
-        state: present
-        disable_gpg_check: true
-      loop: "{{ clickhouse_packages }}"
-      notify: Start clickhouse service
-    - name: Flush handlers
-      ansible.builtin.meta: flush_handlers
-    # - name: Wait for ClickHouse to be ready
-    #   become: true
-    #   ansible.builtin.wait_for:
-    #     port: 9000
-    #     host: localhost
-    #     delay: 5
-    #     timeout: 60
-    #     state: started
-    #   register: clickhouse_ready
     - name: Create database
       ansible.builtin.command: "clickhouse-client -q 'create database {{ clickhouse_database }};'"
       register: create_db
       failed_when: create_db.rc != 0 and create_db.rc != 82
       changed_when: create_db.rc == 0
-      # when: clickhouse_ready is succeeded
+
     - name: Create table for Vector messages
       ansible.builtin.command: |
         clickhouse-client -q "
@@ -56,55 +28,24 @@
       register: create_table
       changed_when: "'already exists' not in create_table.stderr"
       failed_when: create_table.rc != 0 and 'already exists' not in create_table.stderr
-      # when: clickhouse_ready is succeeded
 - name: Install Vector
   hosts: vector
   tags:
     - vector
   vars_files:
     - ../vars/common.yml
-  handlers:
-    - name: Restart vector service
-      become: true
-      ansible.builtin.systemd:
-        name: vector
-        state: restarted
-      when: true
-  tasks:
-    - name: Create vector config directory
-      become: true
-      ansible.builtin.file:
-        path: "{{ vector_config_dir }}"
-        state: directory
-        mode: '0755'
-    - name: Download Vector RPM package
-      ansible.builtin.get_url:
-        url: "{{ vector_download_url }}"
-        dest: "./{{ vector_package }}"
-        mode: '0644'
-    - name: Install Vector package
-      become: true
-      ansible.builtin.dnf:
-        name: "./{{ vector_package }}"
-        state: present
-        disable_gpg_check: true
-      notify: Restart vector service
-    - name: Flush handlers
-      ansible.builtin.meta: flush_handlers
-    - name: Deploy Vector configuration
-      become: true
-      ansible.builtin.template:
-        src: "{{ playbook_dir }}/templates/vector.yaml.j2"
-        dest: "{{ vector_config_file }}"
-        mode: '0644'
-      notify: Restart vector service
-    - name: Flush handlers
-      ansible.builtin.meta: flush_handlers
+  vars:
+    vector_clickhouse_database: "{{ clickhouse_database }}"
+    vector_clickhouse_table: "{{ clickhouse_table }}"
+  roles:
+    - vector
 
 
 - name: Install and configure LightHouse
   hosts: lighthouse
   tags:
+    - lighthouse
+  roles:
     - lighthouse
   handlers:
     - name: Restart nginx
@@ -119,23 +60,7 @@
       ansible.builtin.dnf:
         name:
           - nginx
-          - git
         state: present
-
-    - name: Create lighthouse directory
-      become: true
-      ansible.builtin.file:
-        path: "{{ lighthouse_install_dir }}"
-        state: directory
-        mode: '0755'
-
-    - name: Clone lighthouse repository
-      become: true
-      ansible.builtin.git:
-        repo: "{{ lighthouse_repo }}"
-        dest: "{{ lighthouse_install_dir }}"
-        version: master
-        force: true
 
     - name: Deploy lighthouse nginx site config
       become: true

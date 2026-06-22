@@ -4,3 +4,15 @@ clickhouse_packages:
   - clickhouse-common-static
   - clickhouse-client
   - clickhouse-server
+
+
+# Отключаем GPG проверку
+clickhouse_disable_gpg_check: true
+
+# GPG ключ (нужен для импорта, даже если проверка отключена)
+clickhouse_repo_key: "https://packages.clickhouse.com/rpm/stable/repodata/repomd.xml.key"
+
+# Настройки репозитория
+clickhouse_repo: "https://packages.clickhouse.com/rpm/stable/"
+
+disable_gpg_check: true 
