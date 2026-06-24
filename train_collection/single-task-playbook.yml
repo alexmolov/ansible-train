@@ -1,0 +1,15 @@
+- name: Test my_own_module
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  
+  tasks:
+    - name: Create a file with content
+      my_own_module:
+        path: /home/osboxes/wowwow
+        content: "realnowork"
+      register: result
+
+    - name: Show result
+      debug:
+        var: result
